@@ -19,7 +19,13 @@ Requires Node.js 20+.
 pnpm install
 ```
 
-Copy `.env.example` to `.env` and add your `ANTHROPIC_API_KEY` if you want to use a real LLM. The test suite works without one.
+The test suite works without an API key. To use `AnthropicProvider` with a live LLM, install the peer dependency:
+
+```bash
+pnpm add @anthropic-ai/sdk
+```
+
+Then set `ANTHROPIC_API_KEY` in your environment.
 
 ## Usage
 
@@ -71,7 +77,7 @@ pnpm lint
 - TypeScript 5
 - Zod (runtime type validation)
 - Vitest (testing)
-- Anthropic SDK (LLM provider)
+- Anthropic SDK (optional peer dependency for live LLM)
 - pnpm (package manager)
 
 ## Project Layout
