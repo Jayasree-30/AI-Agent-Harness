@@ -7,8 +7,6 @@
 		"build": "tsc",
 		"test": "vitest run",
 		"test:watch": "vitest",
-		"eval": "tsx tests/eval/runner.ts",
-		"eval:ci": "tsx tests/eval/runner.ts",
 		"lint": "eslint src/ tests/",
 		"format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
 		"typecheck": "tsc --noEmit"

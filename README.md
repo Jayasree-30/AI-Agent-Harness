@@ -66,12 +66,6 @@ Lint:
 pnpm lint
 ```
 
-Run the eval corpus against a real LLM:
-
-```bash
-pnpm eval
-```
-
 ## Tech Stack
 
 - TypeScript 5
