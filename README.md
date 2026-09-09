@@ -72,6 +72,18 @@ Lint:
 pnpm lint
 ```
 
+Run the eval corpus against a real LLM:
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+pnpm eval # all 21 cases
+pnpm eval golden # 12 golden cases
+pnpm eval injection # 5 injection cases
+pnpm eval scope # 4 scope cases
+```
+
+Pass-rate threshold is 80%. Below that, exits non-zero for CI gating.
+
 ## Tech Stack
 
 - TypeScript 5
@@ -90,12 +102,13 @@ src/
 ├── providers/ # LLM and retrieval adapters
 ├── guardrails/ # Input, scope, output guards
 ├── prompts/ # Versioned prompt templates
-└── tools/ # Tool interfaces
+├── tools/ # Tool interfaces
+└── ui/ # Interactive CLI
 
 tests/
 ├── unit/ # Component tests
 ├── contracts/ # Schema tests
-└── eval/ # Golden Q&A and injection corpus
+└── eval/ # Golden Q&A + injection corpus + runner
 ```
 
 ## License
