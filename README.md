@@ -16,16 +16,10 @@ A layered agent architecture for read-only, cited Q&A over a bounded knowledge b
 Requires Node.js 20+.
 
 ```bash
-pnpm install
+npm install
 ```
 
-The test suite works without an API key. To use `AnthropicProvider` with a live LLM, install the peer dependency:
-
-```bash
-pnpm add @anthropic-ai/sdk
-```
-
-Then set `ANTHROPIC_API_KEY` in your environment.
+The test suite works without an API key. To use `AnthropicProvider` with a live LLM, set `ANTHROPIC_API_KEY` in your environment.
 
 ## Usage
 

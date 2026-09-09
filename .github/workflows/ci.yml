@@ -10,14 +10,12 @@ jobs:
 		runs-on: ubuntu-latest
 		steps:
 			- uses: actions/checkout@v4
-			- uses: pnpm/action-setup@v4
-				with: { version: 9 }
 			- uses: actions/setup-node@v4
-				with: { node-version: 22, cache: "pnpm" }
-			- run: pnpm install --frozen-lockfile
-			- run: pnpm typecheck
-			- run: pnpm test
-			- run: pnpm lint
+				with: { node-version: 22, cache: "npm" }
+			- run: npm ci
+			- run: npm run typecheck
+			- run: npm test
+			- run: npm run lint
 
 	eval:
 		runs-on: ubuntu-latest
@@ -25,12 +23,10 @@ jobs:
 		if: github.event_name == 'push'
 		steps:
 			- uses: actions/checkout@v4
-			- uses: pnpm/action-setup@v4
-				with: { version: 9 }
 			- uses: actions/setup-node@v4
-				with: { node-version: 22, cache: "pnpm" }
-			- run: pnpm install --frozen-lockfile
+				with: { node-version: 22, cache: "npm" }
+			- run: npm ci
 			- name: Run eval harness
 				env:
 					ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-				run: pnpm eval
+				run: npm run eval
