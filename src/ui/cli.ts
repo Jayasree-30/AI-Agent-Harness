@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Interactive CLI: typed questions, cited answers, terminal state visibility.
-// Demo documents are inline; for production, replace with your own corpus.
+// Uses fixture documents from /fixtures for the demo. For production,
+// replace with your own corpus.
 
 import * as readline from "readline";
 import { Anthropic } from "@anthropic-ai/sdk";
@@ -10,23 +11,9 @@ import {
 	createOrchestrator,
 	seedKnowledgeBase,
 } from "../index.js";
+import { FIXTURE_DOCUMENTS, DOMAIN_DESCRIPTION as DOMAIN } from "../../fixtures/index.js";
 
-const DOMAIN = "Company policies, employee handbook, and engineering guidelines";
-
-const DOCUMENTS = [
-	{
-		id: "company-policies",
-		title: "Company Policy Handbook",
-		content:
-			"Full-time employees accrue 20 vacation days per year. Up to 5 unused days carry over. Sick leave: 10 paid days per year. Paid parental leave: 12 weeks. Observed holidays: Christmas, Thanksgiving, New Year, Independence Day, Labor Day, Memorial Day. Holidays falling on weekends roll to nearest weekday. Remote work: 3 days per week. Meal reimbursement during travel: $75/day. Harassment reports go to hotline or conduct@company.com. Passwords: minimum 12 characters, rotate every 90 days. Performance reviews: semi-annually in June and December. Two-factor authentication is mandatory on all systems.",
-	},
-	{
-		id: "engineering-guide",
-		title: "Engineering Onboarding Guide",
-		content:
-			"Setup: clone repo, install deps, run tests. Code review: 2 approvals required. Deploy: CI/CD pipeline. Stack: TypeScript, Node.js. Branching: feature branches off main. PRs require passing CI.",
-	},
-];
+const DOCUMENTS = FIXTURE_DOCUMENTS;
 
 function printUsage() {
 	console.error("ERROR: ANTHROPIC_API_KEY environment variable is required");
