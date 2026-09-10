@@ -39,7 +39,7 @@ export class InputGuard {
 			const result = JSON.parse(cleaned);
 			if (result.is_suspicious) return { blocked: true, reason: result.reason ?? "LLM flagged" };
 		} catch {
-			/* fail-closed */
+			return { blocked: true, reason: "Could not verify safety" };
 		}
 		return { blocked: false };
 	}
@@ -49,15 +49,21 @@ export class OutputGuard {
 	constructor(private readonly llm: LlmProvider) {}
 
 	async check(answer: string): Promise<OutputGuardResult> {
-		if (/\[source:[^\]]+\]/i.test(answer)) return { blocked: false };
+		// First check: heuristic citation presence
+		const citationPattern = /\[source:[^\]]+\]/i;
+		const citations = (answer.match(citationPattern) ?? []);
+		if (citations.length === 0) {
+			return { blocked: true, reason: "No citations found in answer" };
+		}
 
+		// Second check: LLM verification that citations are meaningful
 		try {
-			const response = await this.llm.generate([
-				{ role: "user", content: getPrompt("answer.output_guard").template + "\n\nAnswer: " + answer },
-			]);
+			const prompt = getPrompt("answer.output_guard");
+			const rendered = renderPrompt(prompt.template, { answer });
+			const response = await this.llm.generate([{ role: "user", content: rendered }]);
 			const cleaned = response.content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
 			const result = JSON.parse(cleaned);
-			if (!result.has_citations) return { blocked: true, reason: "No citations found" };
+			if (!result.has_citations) return { blocked: true, reason: "LLM verified: no valid citations" };
 			return { blocked: false };
 		} catch {
 			return { blocked: true, reason: "Could not verify citations" };

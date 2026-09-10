@@ -29,6 +29,9 @@ export class Orchestrator {
 		private readonly scopeLock: ScopeLock,
 		config: Partial<OrchestratorConfig> = {}
 	) {
+		if (!config.domainDescription?.trim()) {
+			throw new Error("domainDescription must be a non-empty string");
+		}
 		this.config = { ...DEFAULT_CONFIG, ...config };
 	}
 
@@ -102,18 +105,15 @@ export class Orchestrator {
 		const prompt = getPrompt("answer.grounding");
 		const chunksText = chunks.map((c) => `[${c.id}] ${c.content.slice(0, 200)}`).join("\n\n");
 		const rendered = renderTemplate(prompt.template, { question, chunks: chunksText });
-		const response = await this.llm.generate([
-			{ role: "system", content: prompt.template },
-			{ role: "user", content: rendered },
-		]);
-		let isRelevant = true;
 		try {
-			const parsed = JSON.parse(response.content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim());
-			isRelevant = parsed.relevant ?? true;
+			const response = await this.llm.generate([{ role: "user", content: rendered }]);
+			const cleaned = response.content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+			const parsed = JSON.parse(cleaned);
+			const isRelevant = parsed.relevant ?? false;
+			return { chunks, isRelevant };
 		} catch {
-			// malformed JSON: default to relevant (output guard will catch uncited answers)
+			return { chunks, isRelevant: false };
 		}
-		return { chunks, isRelevant };
 	}
 
 	private async answer(question: string, chunks: Chunk[]): Promise<Answer> {
