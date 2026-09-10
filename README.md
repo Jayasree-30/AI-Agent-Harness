@@ -39,41 +39,41 @@ const result = await orchestrator.run({ text: "How many vacation days?" });
 Run all tests:
 
 ```bash
-pnpm test
+npm test
 ```
 
 Run a single test file:
 
 ```bash
-pnpm test tests/unit/all.test.ts
+npx vitest run tests/unit/all.test.ts
 ```
 
 Watch mode:
 
 ```bash
-pnpm test:watch
+npx vitest
 ```
 
 Type check:
 
 ```bash
-pnpm typecheck
+npm run typecheck
 ```
 
 Lint:
 
 ```bash
-pnpm lint
+npm run lint
 ```
 
 Run the eval corpus against a real LLM:
 
 ```bash
 export ANTHROPIC_API_KEY=sk-ant-...
-pnpm eval # all 21 cases
-pnpm eval golden # 12 golden cases
-pnpm eval injection # 5 injection cases
-pnpm eval scope # 4 scope cases
+npm run eval # all 21 cases
+npm run eval -- --filter golden # 12 golden cases
+npm run eval -- --filter injection # 5 injection cases
+npm run eval -- --filter scope # 4 scope cases
 ```
 
 Pass-rate threshold is 80%. Below that, exits non-zero for CI gating.
@@ -84,7 +84,7 @@ Pass-rate threshold is 80%. Below that, exits non-zero for CI gating.
 - Zod (runtime type validation)
 - Vitest (testing)
 - Anthropic SDK (optional peer dependency for live LLM)
-- pnpm (package manager)
+- npm (package manager)
 
 ## Project Layout
 

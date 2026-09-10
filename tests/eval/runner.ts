@@ -9,6 +9,7 @@ import {
 	seedKnowledgeBase,
 } from "../../src/index.js";
 import { FIXTURE_DOCUMENTS, DOMAIN_DESCRIPTION as DOMAIN } from "../../fixtures/index.js";
+import { ANTHROPIC_API_KEY_ENV, ANTHROPIC_BASE_URL_ENV, DEFAULT_BASE_URL } from "../../src/config/index.js";
 import { GOLDEN_CASES, INJECTION_CASES, SCOPE_CASES, ALL_CASES, runEval, printReport } from "./corpus";
 
 const TEST_DOCUMENTS = FIXTURE_DOCUMENTS;
@@ -20,14 +21,14 @@ async function main() {
 	else if (filter === "injection") cases = INJECTION_CASES;
 	else if (filter === "scope") cases = SCOPE_CASES;
 
-	const apiKey = process.env.ANTHROPIC_API_KEY;
+	const apiKey = process.env[ANTHROPIC_API_KEY_ENV];
 	if (!apiKey) {
-		console.error("ERROR: ANTHROPIC_API_KEY is not set");
-		console.error("Set ANTHROPIC_API_KEY=sk-ant-... before running pnpm eval");
+		console.error("ERROR: " + ANTHROPIC_API_KEY_ENV + " is not set");
+		console.error("Set " + ANTHROPIC_API_KEY_ENV + "=sk-ant-... before running npm run eval");
 		process.exit(2);
 	}
 
-	const baseURL = process.env.ANTHROPIC_BASE_URL ?? "https://api.anthropic.com";
+	const baseURL = process.env[ANTHROPIC_BASE_URL_ENV] ?? DEFAULT_BASE_URL;
 	const client = new Anthropic({ apiKey, baseURL });
 	const llm = new AnthropicProvider(client);
 	const retrieval = new InMemoryRetrieval();

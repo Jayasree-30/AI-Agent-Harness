@@ -12,28 +12,29 @@ import {
 	seedKnowledgeBase,
 } from "../index.js";
 import { FIXTURE_DOCUMENTS, DOMAIN_DESCRIPTION as DOMAIN } from "../../fixtures/index.js";
+import { ANTHROPIC_API_KEY_ENV, ANTHROPIC_BASE_URL_ENV, DEFAULT_BASE_URL } from "../config/index.js";
 
 const DOCUMENTS = FIXTURE_DOCUMENTS;
 
 function printUsage() {
-	console.error("ERROR: ANTHROPIC_API_KEY environment variable is required");
+	console.error("ERROR: " + ANTHROPIC_API_KEY_ENV + " environment variable is required");
 	console.error("");
 	console.error("Set it before running:");
-	console.error(" Windows: set ANTHROPIC_API_KEY=sk-ant-...");
-	console.error(" Unix: ANTHROPIC_API_KEY=sk-ant-... pnpm dev");
+	console.error(" Windows: set " + ANTHROPIC_API_KEY_ENV + "=sk-ant-...");
+	console.error(" Unix: " + ANTHROPIC_API_KEY_ENV + "=sk-ant-... npm run dev");
 }
 
 async function main() {
 	console.log("\n AI Agent Harness - Read-Only Q&A Interface");
 	console.log(" Type 'quit' or Ctrl+C to exit\n");
 
-	const apiKey = process.env.ANTHROPIC_API_KEY;
+	const apiKey = process.env[ANTHROPIC_API_KEY_ENV];
 	if (!apiKey) {
 		printUsage();
 		process.exit(1);
 	}
 
-	const baseURL = process.env.ANTHROPIC_BASE_URL ?? "https://api.anthropic.com";
+	const baseURL = process.env[ANTHROPIC_BASE_URL_ENV] ?? DEFAULT_BASE_URL;
 	const client = new Anthropic({ apiKey, baseURL });
 	const llm = new AnthropicProvider(client);
 	const retrieval = new InMemoryRetrieval();
@@ -65,7 +66,7 @@ async function main() {
 		try {
 			const output = await orchestrator.run({ text: trimmed });
 			if (output.status === "COMPLETED") {
-				const ans = (output as { status: "COMPLETED"; answer: import("../contracts/schemas").Answer }).answer;
+				const ans = output.answer;
 				console.log("-".repeat(60));
 				console.log(ans.answer);
 				console.log("-".repeat(60));
@@ -75,7 +76,7 @@ async function main() {
 				}
 				console.log(`\nConfidence: ${ans.confidence}`);
 			} else {
-				const reason = (output as { reason?: string }).reason ?? "";
+				const reason = output.reason ?? "";
 				console.log(`[${output.status}] ${reason}`);
 			}
 			console.log(`\n${Date.now() - start}ms\n`);

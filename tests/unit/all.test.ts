@@ -17,7 +17,7 @@ describe("Contracts", () => {
 
 describe("Prompt Registry", () => {
  it("returns prompt by ID", () => { const p = getPrompt("answer.main"); expect(p.version).toBe("v1"); expect(p.template.length).toBeGreaterThan(0); });
- it("throws on unknown ID", () => { expect(() => getPrompt("nonexistent" as any)).toThrow(); });
+ it("throws on unknown ID", () => { expect(() => getPrompt("nonexistent" as never)).toThrow(); });
  it("renders template vars", () => { expect(renderTemplate("Hello {{name}}", { name: "World" })).toBe("Hello World"); });
  it("lists all prompts", () => { expect(listPrompts().length).toBeGreaterThan(5); });
 });
@@ -67,7 +67,7 @@ describe("LlmProvider", () => {
  expect((await mock.generate([])).content).toBe("R2");
  });
  it("returns default when exhausted", async () => { const mock = new MockLlmProvider([]); expect((await mock.generate([])).content).toBe("I don't have enough context."); });
- it("parses JSON", async () => { const r = await new MockLlmProvider(['{"result":42}']).generateWithJson([], "s"); expect((r.data as any).result).toBe(42); });
+ it("parses JSON", async () => { const r = await new MockLlmProvider(['{"result":42}']).generateWithJson<{ result: number }>([], "s"); expect(r.data.result).toBe(42); });
 });
 
 describe("InputGuard", () => {
