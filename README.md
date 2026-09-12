@@ -13,13 +13,31 @@ A layered agent architecture for read-only, cited Q&A over a bounded knowledge b
 
 ## Setup
 
-Requires Node.js 20+.
+Requires Node.js 20+ and npm 10+.
 
 ```bash
+# Install dependencies
 npm install
+
+# Run the interactive CLI
+npx tsx src/ui/cli.ts
+
+# Or with npm script
+npm run dev
 ```
 
-The test suite works without an API key. To use `AnthropicProvider` with a live LLM, set `ANTHROPIC_API_KEY` in your environment.
+To use the CLI with a live LLM, set the environment variable first:
+
+```bash
+# Windows (Command Prompt)
+set ANTHROPIC_API_KEY=sk-ant-...
+
+# Windows (PowerShell)
+$env:ANTHROPIC_API_KEY = "sk-ant-..."
+
+# Mac/Linux
+export ANTHROPIC_API_KEY=sk-ant-...
+```
 
 ## Usage
 
@@ -36,7 +54,7 @@ const result = await orchestrator.run({ text: "How many vacation days?" });
 
 ## How to Test
 
-Run all tests:
+Run all tests (uses mock LLM — no API key needed):
 
 ```bash
 npm test
@@ -66,14 +84,14 @@ Lint:
 npm run lint
 ```
 
-Run the eval corpus against a real LLM:
+Run the eval corpus against a real LLM (requires `ANTHROPIC_API_KEY`):
 
 ```bash
 export ANTHROPIC_API_KEY=sk-ant-...
-npm run eval # all 21 cases
-npm run eval -- --filter golden # 12 golden cases
-npm run eval -- --filter injection # 5 injection cases
-npm run eval -- --filter scope # 4 scope cases
+npm run eval # all 33 cases
+npm run eval -- --filter golden # 19 golden Q&A cases
+npm run eval -- --filter injection # 8 injection attack cases
+npm run eval -- --filter scope # 6 out-of-scope cases
 ```
 
 Pass-rate threshold is 80%. Below that, exits non-zero for CI gating.
