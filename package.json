@@ -6,7 +6,7 @@
 	"scripts": {
 		"dev": "tsx src/ui/cli.ts",
 		"build": "tsc",
-		"test": "vitest run",
+		"test": "vitest run tests/unit tests/contracts",
 		"test:watch": "vitest",
 		"eval": "tsx tests/eval/runner.ts",
 		"lint": "eslint src/ tests/",
