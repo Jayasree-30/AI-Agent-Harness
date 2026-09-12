@@ -76,27 +76,27 @@ The reasoning: each deferred item requires a category of decision (e.g., persist
 
 **Run all tests:**
 ```bash
-pnpm test
+npm test
 ```
 
 **Run a single test file:**
 ```bash
-pnpm test tests/unit/all.test.ts
+npx vitest run tests/unit/all.test.ts
 ```
 
 **Watch mode:**
 ```bash
-pnpm test:watch
+npx vitest
 ```
 
 **Type check:**
 ```bash
-pnpm typecheck
+npm run typecheck
 ```
 
 **Lint:**
 ```bash
-pnpm lint
+npm run lint
 ```
 
 The test suite uses `MockLlmProvider` and `MockRetrieval` so no API key is required. Tests cover schemas, providers, guardrails, prompts, retrieval, orchestrator, and the eval-corpus structure.
