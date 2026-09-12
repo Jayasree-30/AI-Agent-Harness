@@ -34,7 +34,7 @@ async function main() {
 		process.exit(1);
 	}
 
-	const baseURL = process.env[ANTHROPIC_BASE_URL_ENV] ?? DEFAULT_BASE_URL;
+	const baseURL = DEFAULT_BASE_URL;
 	const client = new Anthropic({ apiKey, baseURL });
 	const llm = new AnthropicProvider(client);
 	const retrieval = new InMemoryRetrieval();

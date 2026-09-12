@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { DEFAULT_BASE_URL } from "../config/index.js";
 
 export interface LlmMessage {
  role: "user" | "assistant" | "system";

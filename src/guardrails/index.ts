@@ -11,15 +11,14 @@ export class InputGuard {
 	async check(message: string): Promise<InputGuardResult> {
 		const patterns = [
 			/ignore\s+(all\s+)?(previous|above|earlier|your)\s+(instructions|prompts|rules|guidelines)/i,
-			/ignore\s+all/i,
+			/disregard\s+(all\s+)?(previous|above|earlier|your)\s+(instructions|prompts|rules|guidelines)/i,
 			/you\s+are\s+(now|a)\s+/i,
-			/disregard/i,
-			/override/i,
+			/override\s+(your|the)\s+(instructions|rules|guidelines|constraints)/i,
 			/reveal\s+(your|the)\s+(system|prompt|instructions|rules|configuration)/i,
 			/pretend\s+(you\s+are|to\s+be)/i,
-			/DAN\s*mode/i,
-			/developer\s+mode/i,
-			/jailbreak/i,
+			/\bDAN\s*mode\b/i,
+			/\bdeveloper\s*mode\b/i,
+			/\bjailbreak\b/i,
 			/\[INST\]/i,
 			/<\|im_start\|>/i,
 			/system\s*prompt/i,
@@ -31,17 +30,19 @@ export class InputGuard {
 		}
 
 		try {
+			const prompt = getPrompt("guard.input");
+			const rendered = renderPrompt(prompt.template, { message });
 			const response = await this.llm.generate([
-				{ role: "system", content: getPrompt("guard.input").template },
-				{ role: "user", content: message },
+				{ role: "system", content: "You are a safety classifier. Always respond with valid JSON only." },
+				{ role: "user", content: rendered },
 			]);
 			const cleaned = response.content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
 			const result = JSON.parse(cleaned);
 			if (result.is_suspicious) return { blocked: true, reason: result.reason ?? "LLM flagged" };
+			return { blocked: false };
 		} catch {
-			return { blocked: true, reason: "Could not verify safety" };
+			return { blocked: true, reason: "Could not verify safety (LLM check failed)" };
 		}
-		return { blocked: false };
 	}
 }
 
