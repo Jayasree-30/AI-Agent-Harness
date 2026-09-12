@@ -4,39 +4,38 @@
 // replace with your own corpus.
 
 import * as readline from "readline";
-import { Anthropic } from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import {
-	AnthropicProvider,
+	GeminiProvider,
 	InMemoryRetrieval,
 	createOrchestrator,
 	seedKnowledgeBase,
 } from "../index.js";
 import { FIXTURE_DOCUMENTS, DOMAIN_DESCRIPTION as DOMAIN } from "../../fixtures/index.js";
-import { ANTHROPIC_API_KEY_ENV, ANTHROPIC_BASE_URL_ENV, DEFAULT_BASE_URL } from "../config/index.js";
+import { LLM_API_KEY_ENV, DEFAULT_BASE_URL } from "../config/index.js";
 
 const DOCUMENTS = FIXTURE_DOCUMENTS;
 
 function printUsage() {
-	console.error("ERROR: " + ANTHROPIC_API_KEY_ENV + " environment variable is required");
+	console.error("ERROR: " + LLM_API_KEY_ENV + " environment variable is required");
 	console.error("");
 	console.error("Set it before running:");
-	console.error(" Windows: set " + ANTHROPIC_API_KEY_ENV + "=sk-ant-...");
-	console.error(" Unix: " + ANTHROPIC_API_KEY_ENV + "=sk-ant-... npm run dev");
+	console.error(" Windows: set " + LLM_API_KEY_ENV + "=AIza...");
+	console.error(" Unix: " + LLM_API_KEY_ENV + "=AIza... npm run dev");
 }
 
 async function main() {
 	console.log("\n AI Agent Harness - Read-Only Q&A Interface");
 	console.log(" Type 'quit' or Ctrl+C to exit\n");
 
-	const apiKey = process.env[ANTHROPIC_API_KEY_ENV];
+	const apiKey = process.env[LLM_API_KEY_ENV];
 	if (!apiKey) {
 		printUsage();
 		process.exit(1);
 	}
 
-	const baseURL = DEFAULT_BASE_URL;
-	const client = new Anthropic({ apiKey, baseURL });
-	const llm = new AnthropicProvider(client);
+	const genAI = new GoogleGenerativeAI(apiKey);
+	const llm = new GeminiProvider(genAI);
 	const retrieval = new InMemoryRetrieval();
 
 	await seedKnowledgeBase(retrieval, DOCUMENTS);

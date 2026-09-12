@@ -2,9 +2,8 @@
 // Centralize env var names, defaults, and resilience settings so
 // consumers stay consistent and behavior is easy to audit.
 
-export const ANTHROPIC_API_KEY_ENV = "ANTHROPIC_API_KEY";
-export const ANTHROPIC_BASE_URL_ENV = "ANTHROPIC_BASE_URL";
-export const DEFAULT_BASE_URL = "https://api.anthropic.com";
+export const LLM_API_KEY_ENV = "LLM_API_KEY";
+export const DEFAULT_BASE_URL = "https://generativelanguage.googleapis.com";
 
 /** Max time (ms) to wait for a single LLM API call before timing out. */
 export const LLM_TIMEOUT_MS = 30_000;

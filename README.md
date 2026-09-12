@@ -30,13 +30,13 @@ To use the CLI with a live LLM, set the environment variable first:
 
 ```bash
 # Windows (Command Prompt)
-set ANTHROPIC_API_KEY=sk-ant-...
+set LLM_API_KEY=AIza...
 
 # Windows (PowerShell)
-$env:ANTHROPIC_API_KEY = "sk-ant-..."
+$env:LLM_API_KEY = "AIza..."
 
 # Mac/Linux
-export ANTHROPIC_API_KEY=sk-ant-...
+export LLM_API_KEY=AIza...
 ```
 
 ## Usage
@@ -84,10 +84,10 @@ Lint:
 npm run lint
 ```
 
-Run the eval corpus against a real LLM (requires `ANTHROPIC_API_KEY`):
+Run the eval corpus against a real LLM (requires `LLM_API_KEY`):
 
 ```bash
-export ANTHROPIC_API_KEY=sk-ant-...
+export LLM_API_KEY=AIza...
 npm run eval # all 33 cases
 npm run eval -- --filter golden # 19 golden Q&A cases
 npm run eval -- --filter injection # 8 injection attack cases

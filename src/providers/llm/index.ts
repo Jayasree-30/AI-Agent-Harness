@@ -1,82 +1,114 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { DEFAULT_BASE_URL } from "../config/index.js";
+import { GoogleGenerativeAI, type GenerativeModel } from "@google/generative-ai";
 
 export interface LlmMessage {
- role: "user" | "assistant" | "system";
- content: string;
+	role: "user" | "assistant" | "system";
+	content: string;
 }
 
 export interface LlmResponse {
- content: string;
- stopReason: string;
- usage: { inputTokens: number; outputTokens: number };
+	content: string;
+	stopReason: string;
+	usage: { inputTokens: number; outputTokens: number };
 }
 
 export interface LlmProvider {
- generate(messages: LlmMessage[]): Promise<LlmResponse>;
- generateWithJson<T>(messages: LlmMessage[], schemaDescription: string): Promise<{ data: T; raw: string }>;
+	generate(messages: LlmMessage[]): Promise<LlmResponse>;
+	generateWithJson<T>(messages: LlmMessage[], schemaDescription: string): Promise<{ data: T; raw: string }>;
 }
 
-export class AnthropicProvider implements LlmProvider {
- constructor(
- private readonly client: Anthropic,
- private readonly model: string = "claude-haiku-4-5-20250514"
- ) {}
+export class GeminiProvider implements LlmProvider {
+	private readonly model: GenerativeModel;
 
- async generate(messages: LlmMessage[]): Promise<LlmResponse> {
- const systemMsg = messages.find((m) => m.role === "system");
- const chatMsgs = messages.filter((m) => m.role !== "system");
+	constructor(
+		private readonly genAI: GoogleGenerativeAI,
+		modelName: string = "gemini-2.0-flash-exp"
+	) {
+		this.model = genAI.getGenerativeModel({ model: modelName });
+	}
 
- const response = await this.client.messages.create({
- model: this.model,
- max_tokens: 1024,
- system: systemMsg?.content,
- messages: chatMsgs.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
- });
+	async generate(messages: LlmMessage[]): Promise<LlmResponse> {
+		const chatMsgs = messages.filter((m) => m.role !== "system");
 
- const textContent = response.content.find((c) => c.type === "text");
- return {
- content: textContent ? textContent.text : "",
- stopReason: response.stop_reason ?? "unknown",
- usage: { inputTokens: response.usage.input_tokens, outputTokens: response.usage.output_tokens },
- };
- }
+		const contents: Array<{ role: "user" | "model"; parts: Array<{ text: string }> }> = [];
+		for (const m of chatMsgs) {
+			contents.push({
+				role: m.role === "assistant" ? "model" : "user",
+				parts: [{ text: m.content }],
+			});
+		}
 
- async generateWithJson<T>(messages: LlmMessage[], _schemaDescription: string): Promise<{ data: T; raw: string }> {
- const sysMsg = messages.find((m) => m.role === "system");
- const chatMsgs = messages.filter((m) => m.role !== "system");
+		const result = await this.model.generateContent({ contents });
+		const response = await result.response;
+		const text = response.text();
 
- const response = await this.client.messages.create({
- model: this.model,
- max_tokens: 2048,
- system: sysMsg?.content,
- messages: chatMsgs.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
- });
+		return {
+			content: text,
+			stopReason: "end_turn",
+			usage: {
+				inputTokens: response.usageMetadata?.promptTokenCount ?? 0,
+				outputTokens: response.usageMetadata?.candidatesTokenCount ?? 0,
+			},
+		};
+	}
 
- const textContent = response.content.find((c) => c.type === "text");
- const raw = textContent ? textContent.text : "";
+	async generateWithJson<T>(messages: LlmMessage[], _schemaDescription: string): Promise<{ data: T; raw: string }> {
+		const sysMsg = messages.find((m) => m.role === "system");
+		const chatMsgs = messages.filter((m) => m.role !== "system");
 
- let parsed: T;
- try { parsed = JSON.parse(raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()) as T; }
- catch { parsed = { answer: raw, citations: [], confidence: "low" } as T; }
+		const contents: Array<{ role: "user" | "model"; parts: Array<{ text: string }> }> = [];
 
- return { data: parsed, raw };
- }
+		if (sysMsg) {
+			contents.push({
+				role: "user",
+				parts: [{ text: `[]\n${sysMsg.content}` }],
+			});
+			contents.push({
+				role: "model",
+				parts: [{ text: "Understood. I will follow these instructions." }],
+			});
+		}
+
+		for (const m of chatMsgs) {
+			contents.push({
+				role: m.role === "assistant" ? "model" : "user",
+				parts: [{ text: m.content }],
+			});
+		}
+
+		const result = await this.model.generateContent({
+			contents,
+			generationConfig: {
+				responseMimeType: "application/json",
+			},
+		});
+
+		const response = await result.response;
+		const raw = response.text();
+
+		let parsed: T;
+		try {
+			parsed = JSON.parse(raw) as T;
+		} catch {
+			parsed = { answer: raw, citations: [], confidence: "low" } as T;
+		}
+
+		return { data: parsed, raw };
+	}
 }
 
 export class MockLlmProvider implements LlmProvider {
- constructor(private readonly responses: string[] = []) {}
+	constructor(private readonly responses: string[] = []) {}
 
- async generate(_messages: LlmMessage[]): Promise<LlmResponse> {
- const content = this.responses.shift() ?? "I don't have enough context.";
- return { content, stopReason: "end_turn", usage: { inputTokens: 100, outputTokens: 50 } };
- }
+	async generate(_messages: LlmMessage[]): Promise<LlmResponse> {
+		const content = this.responses.shift() ?? "I don't have enough context.";
+		return { content, stopReason: "end_turn", usage: { inputTokens: 100, outputTokens: 50 } };
+	}
 
- async generateWithJson<T>(_messages: LlmMessage[], _schemaDescription: string): Promise<{ data: T; raw: string }> {
- const content = this.responses.shift() ?? '{"answer":"No data.","citations":[],"confidence":"low"}';
- let parsed: T;
- try { parsed = JSON.parse(content) as T; }
- catch { parsed = { answer: content, citations: [], confidence: "low" } as T; }
- return { data: parsed, raw: content };
- }
+	async generateWithJson<T>(_messages: LlmMessage[], _schemaDescription: string): Promise<{ data: T; raw: string }> {
+		const content = this.responses.shift() ?? '{"answer":"No data.","citations":[],"confidence":"low"}';
+		let parsed: T;
+		try { parsed = JSON.parse(content) as T; }
+		catch { parsed = { answer: content, citations: [], confidence: "low" } as T; }
+		return { data: parsed, raw: content };
+	}
 }
