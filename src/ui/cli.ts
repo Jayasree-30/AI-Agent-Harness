@@ -3,6 +3,7 @@
 // Uses fixture documents from /fixtures for the demo. For production,
 // replace with your own corpus.
 
+import "dotenv/config";
 import * as readline from "readline";
 import { AnthropicProvider, InMemoryRetrieval, createOrchestrator, seedKnowledgeBase } from "../index.js";
 import { FIXTURE_DOCUMENTS, DOMAIN_DESCRIPTION as DOMAIN } from "../../fixtures/index.js";
