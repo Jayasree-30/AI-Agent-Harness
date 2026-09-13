@@ -42,9 +42,10 @@ export LLM_API_KEY=AIza...
 ## Usage
 
 ```ts
-import { createOrchestrator, seedKnowledgeBase, AnthropicProvider, InMemoryRetrieval } from "./src/index.js";
+import { createOrchestrator, seedKnowledgeBase, GeminiProvider, InMemoryRetrieval } from "./src/index.js";
 
-const llm = new AnthropicProvider(client);
+const genAI = new GoogleGenerativeAI(process.env.LLM_API_KEY);
+const llm = new GeminiProvider(genAI);
 const retrieval = new InMemoryRetrieval();
 await seedKnowledgeBase(retrieval, yourDocuments);
 
@@ -101,7 +102,7 @@ Pass-rate threshold is 80%. Below that, exits non-zero for CI gating.
 - TypeScript 5
 - Zod (runtime type validation)
 - Vitest (testing)
-- Anthropic SDK (optional peer dependency for live LLM)
+- Google Generative AI SDK (Gemini, for live LLM)
 - npm (package manager)
 
 ## Project Layout
