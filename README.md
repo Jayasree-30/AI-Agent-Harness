@@ -30,22 +30,21 @@ To use the CLI with a live LLM, set the environment variable first:
 
 ```bash
 # Windows (Command Prompt)
-set LLM_API_KEY=AIza...
+set LLM_API_KEY=sk-ant-...
 
 # Windows (PowerShell)
-$env:LLM_API_KEY = "AIza..."
+$env:LLM_API_KEY = "sk-ant-..."
 
 # Mac/Linux
-export LLM_API_KEY=AIza...
+export LLM_API_KEY=sk-ant-...
 ```
 
 ## Usage
 
 ```ts
-import { createOrchestrator, seedKnowledgeBase, GeminiProvider, InMemoryRetrieval } from "./src/index.js";
+import { createOrchestrator, seedKnowledgeBase, AnthropicProvider, InMemoryRetrieval } from "./src/index.js";
 
-const genAI = new GoogleGenerativeAI(process.env.LLM_API_KEY);
-const llm = new GeminiProvider(genAI);
+const llm = new AnthropicProvider(process.env.LLM_API_KEY);
 const retrieval = new InMemoryRetrieval();
 await seedKnowledgeBase(retrieval, yourDocuments);
 
@@ -88,7 +87,7 @@ npm run lint
 Run the eval corpus against a real LLM (requires `LLM_API_KEY`):
 
 ```bash
-export LLM_API_KEY=AIza...
+export LLM_API_KEY=sk-ant-...
 npm run eval # all 33 cases
 npm run eval -- --filter golden # 19 golden Q&A cases
 npm run eval -- --filter injection # 8 injection attack cases
@@ -102,7 +101,7 @@ Pass-rate threshold is 80%. Below that, exits non-zero for CI gating.
 - TypeScript 5
 - Zod (runtime type validation)
 - Vitest (testing)
-- Google Generative AI SDK (Gemini, for live LLM)
+- Anthropic SDK (Claude, for live LLM)
 - npm (package manager)
 
 ## Project Layout

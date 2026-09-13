@@ -3,7 +3,6 @@
 // consumers stay consistent and behavior is easy to audit.
 
 export const LLM_API_KEY_ENV = "LLM_API_KEY";
-export const DEFAULT_BASE_URL = "https://generativelanguage.googleapis.com";
 
 /** Max time (ms) to wait for a single LLM API call before timing out. */
 export const LLM_TIMEOUT_MS = 30_000;

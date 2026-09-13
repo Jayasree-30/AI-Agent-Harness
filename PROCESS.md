@@ -42,7 +42,7 @@ The reasoning: each deferred item requires a category of decision (e.g., persist
 
 **2. Guardrail strategy.** Three independent guards, not one big validator. Input guard runs heuristics *before* calling the LLM to save cost on obvious attacks. Scope lock runs *after* retrieval so it can use the domain description as context. Output guard runs *after* generation so it can verify the actual LLM output. Each guard fails closed — if it can't verify safety, it blocks. This is more conservative than necessary but matches the take-home's bias toward refusal over fluency.
 
-**3. Provider abstraction.** Two interfaces — `LlmProvider` and `RetrievalTool` — implemented by Gemini/real/mock pairs. The orchestrator depends only on the interfaces, so swapping Gemini for OpenAI or in-memory for Pinecone is a constructor change, not a refactor. The mock implementations exist specifically so the test suite runs offline.
+**3. Provider abstraction.** Two interfaces — `LlmProvider` and `RetrievalTool` — implemented by Anthropic/real/mock pairs. The orchestrator depends only on the interfaces, so swapping Claude for OpenAI or in-memory for Pinecone is a constructor change, not a refactor. The mock implementations exist specifically so the test suite runs offline.
 
 **4. Eval corpus design.** Three categories of test cases. Golden cases assert grounded answer + citations. Injection cases assert input guard refuses them. Scope cases assert scope lock refuses them. Each golden case is hand-written with an expected citation format so we can detect hallucinated chunk IDs. The corpus is small (12 + 5 + 4) but covers the main failure modes.
 
@@ -66,11 +66,11 @@ The reasoning: each deferred item requires a category of decision (e.g., persist
 
 **Concurrent evaluation.** The eval runner is sequential. Running cases in parallel (with rate limiting) would cut eval time significantly. Right now it's a CI-cost optimization, not a correctness one.
 
-**Provider-side retry + backoff.** `GeminiProvider.generate()` has no retry. A production version would retry on 429/5xx with exponential backoff. Defer is fine because the test suite uses mocks.
+**Provider-side retry + backoff.** `AnthropicProvider.generate()` has no retry. A production version would retry on 429/5xx with exponential backoff. Defer is fine because the test suite uses mocks.
 
 **Real semantic guard for input.** The current input guard uses regex heuristics plus an LLM check. A real production version would use a dedicated small classifier trained on jailbreak patterns, not the same LLM as the answer generator.
 
-**Integration tests with real API.** Mock-based tests verify the code paths but not the LLM behavior. A small smoke-test suite that runs against the real Gemini API (gated to non-CI, manual run) would catch prompt regressions.
+**Integration tests with real API.** Mock-based tests verify the code paths but not the LLM behavior. A small smoke-test suite that runs against the real Anthropic API (gated to non-CI, manual run) would catch prompt regressions.
 
 ## Running Tests and Eval
 
@@ -105,7 +105,7 @@ The test suite uses `MockLlmProvider` and `MockRetrieval` so no API key is requi
 
 A few things are deliberately outside the automated test suite:
 
-- **Live LLM behavior.** I don't have a CI-stable way to assert that Gemini will answer a golden case correctly across model versions. The mocked golden-path test verifies the *code path*, not the LLM's actual output. A real eval would require running against the live API with versioned test expectations.
+- **Live LLM behavior.** I don't have a CI-stable way to assert that Claude will answer a golden case correctly across model versions. The mocked golden-path test verifies the *code path*, not the LLM's actual output. A real eval would require running against the live API with versioned test expectations.
 
 - **Performance / latency.** No tests assert that `run()` completes within a time budget. This would be flaky on CI; better handled with separate perf benchmarks.
 

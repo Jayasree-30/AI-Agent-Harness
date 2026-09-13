@@ -3,14 +3,13 @@
 // orchestrator and reports a pass rate. Exit code 1 below threshold (80%).
 
 import "dotenv/config";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import {
-	GeminiProvider,
+	AnthropicProvider,
 	InMemoryRetrieval,
 	seedKnowledgeBase,
 } from "../../src/index.js";
 import { FIXTURE_DOCUMENTS, DOMAIN_DESCRIPTION as DOMAIN } from "../../fixtures/index.js";
-import { LLM_API_KEY_ENV, DEFAULT_BASE_URL } from "../../src/config/index.js";
+import { LLM_API_KEY_ENV } from "../../src/config/index.js";
 import { GOLDEN_CASES, INJECTION_CASES, SCOPE_CASES, ALL_CASES, runEval, printReport } from "./corpus";
 
 const TEST_DOCUMENTS = FIXTURE_DOCUMENTS;
@@ -25,12 +24,11 @@ async function main() {
 	const apiKey = process.env[LLM_API_KEY_ENV];
 	if (!apiKey) {
 		console.error("ERROR: " + LLM_API_KEY_ENV + " is not set");
-		console.error("Set " + LLM_API_KEY_ENV + "=AIza... before running npm run eval");
+		console.error("Set " + LLM_API_KEY_ENV + "=sk-ant-... before running npm run eval");
 		process.exit(2);
 	}
 
-	const genAI = new GoogleGenerativeAI(apiKey);
-	const llm = new GeminiProvider(genAI);
+	const llm = new AnthropicProvider(apiKey);
 	const retrieval = new InMemoryRetrieval();
 	await seedKnowledgeBase(retrieval, TEST_DOCUMENTS);
 
