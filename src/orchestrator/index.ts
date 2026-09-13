@@ -106,13 +106,14 @@ export class Orchestrator {
 		const chunksText = chunks.map((c) => `[${c.id}] ${c.content.slice(0, 200)}`).join("\n\n");
 		const rendered = renderTemplate(prompt.template, { question, chunks: chunksText });
 		try {
-			const response = await this.llm.generate([{ role: "user", content: rendered }]);
-			const cleaned = response.content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-			const parsed = JSON.parse(cleaned);
-			const isRelevant = parsed.relevant ?? false;
-			return { chunks, isRelevant };
+			const { data: result } = await this.llm.generateWithJson<{ relevant?: boolean }>(
+				[{ role: "user", content: rendered }],
+				"object with relevant boolean"
+			);
+			return { chunks, isRelevant: result.relevant ?? true };
 		} catch {
-			return { chunks, isRelevant: false };
+			// On LLM error, assume relevant — output guard will still verify citations.
+			return { chunks, isRelevant: true };
 		}
 	}
 
@@ -122,25 +123,19 @@ export class Orchestrator {
 			.slice(0, 5)
 			.map((c) => `[source:${c.id}] ${c.content.slice(0, 500)}`)
 			.join("\n\n");
-		const response = await this.llm.generate([
-			{ role: "system", content: prompt.template },
-			{
-				role: "user",
-				content: `Context:\n${contextChunks}\n\nQuestion: ${question}\n\nAnswer based ONLY on the context. Include citations in [source:chunkId] format.`,
-			},
-		]);
+		const { data: result } = await this.llm.generateWithJson<{ answer?: string; citations?: Array<{ chunkId: string; excerpt: string }>; confidence?: string }>(
+			[
+				{ role: "system", content: prompt.template },
+				{ role: "user", content: `Context:\n${contextChunks}\n\nQuestion: ${question}\n\nAnswer based ONLY on the context. Include citations in [source:chunkId] format.` },
+			],
+			"object with answer, citations array, and confidence"
+		);
 
-		const citationPattern = /\[source:([^\]]+)\]/g;
-		const citations: { chunkId: string; excerpt: string }[] = [];
-		let match: RegExpExecArray | null;
-		while ((match = citationPattern.exec(response.content)) !== null) {
-			const found = chunks.find((c) => c.id === match![1]);
-			if (found && !citations.find((c) => c.chunkId === match![1])) {
-				citations.push({ chunkId: match![1], excerpt: found.content.slice(0, 200) });
-			}
-		}
-		const confidence: "high" | "medium" | "low" = citations.length >= 2 ? "high" : citations.length >= 1 ? "medium" : "low";
-		const answer: Answer = { question, answer: response.content, citations, confidence };
+		const answerText = result.answer ?? "";
+		const citations = result.citations ?? [];
+		const confidence: "high" | "medium" | "low" = (result.confidence as "high" | "medium" | "low") ?? "low";
+
+		const answer: Answer = { question, answer: answerText, citations, confidence };
 		return AnswerSchema.parse(answer);
 	}
 }

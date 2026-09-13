@@ -94,7 +94,7 @@ describe("Orchestrator", () => {
  '{"is_suspicious":false}',
  '{"in_scope":true}',
  '{"relevant":true}',
- '{"answer":"20 days [source:c1]","citations":[{"chunkId":"c1","excerpt":"x"}],"confidence":"high"}',
+ '{"answer":"20 days per year [source:c1].","citations":[{"chunkId":"c1","excerpt":"20 vacation days."}],"confidence":"high"}',
  '{"has_citations":true}',
  ]);
  const orch = createOrchestrator(llm, new MockRetrieval([{ id: "c1", documentId: "d1", content: "20 vacation days.", score: 0.9 }]), "Company policies");

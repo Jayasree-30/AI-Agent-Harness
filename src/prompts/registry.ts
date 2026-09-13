@@ -21,10 +21,7 @@ const PROMPTS: Record<PromptId, PromptVersion> = {
 			"2. Always cite sources using [source:chunkId] format.",
 			"3. If context is insufficient, say so honestly.",
 			"",
-			"Response format (strict):",
-			"- Plain text answer (no markdown headers).",
-			"- Embed at least one citation like [source:chunkId] inline.",
-			"- Do not invent chunk IDs that are not in the provided context.",
+			'Respond with JSON: {"answer": string, "citations": [{"chunkId": string, "excerpt": string}], "confidence": "high"|"medium"|"low"}',
 		].join("\n"),
 	},
 	"answer.grounding": {
