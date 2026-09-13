@@ -126,12 +126,21 @@ export class Orchestrator {
 		const { data: result } = await this.llm.generateWithJson<{ answer?: string; citations?: Array<{ chunkId: string; excerpt: string }>; confidence?: string }>(
 			[
 				{ role: "system", content: prompt.template },
-				{ role: "user", content: `Context:\n${contextChunks}\n\nQuestion: ${question}\n\nAnswer based ONLY on the context. Include citations in [source:chunkId] format.` },
+				{ role: "user", content: `Context:\n${contextChunks}\n\nQuestion: ${question}\n\nAnswer using ONLY the context above. Include inline [source:chunkId] citations directly in your answer text after each claim.` },
 			],
 			"object with answer, citations array, and confidence"
 		);
 
-		const answerText = result.answer ?? "";
+		// If the model didn't include inline citations in the answer text,
+		// append them from the citations array so the output guard can verify them.
+		let answerText = result.answer ?? "";
+		if (result.citations && result.citations.length > 0 && !answerText.match(/\[source:[^\]]+\]/)) {
+			const citationRefs = result.citations
+				.map((c) => `[source:${c.chunkId}]`)
+				.join(" ");
+			answerText = `${answerText} ${citationRefs}`;
+		}
+
 		const citations = result.citations ?? [];
 		const confidence: "high" | "medium" | "low" = (result.confidence as "high" | "medium" | "low") ?? "low";
 

@@ -67,7 +67,8 @@ export class AnthropicProvider implements LlmProvider {
 				system: sysMsg?.content,
 				messages: chatMsgs.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
 			});
-			const text = response.content[0].type === "text" ? response.content[0].text : "";
+			const textBlock = response.content.find((block) => block.type === "text");
+			const text = textBlock ? (textBlock as { text?: string }).text ?? "" : "";
 			return {
 				content: text,
 				stopReason: response.stop_reason,
@@ -92,11 +93,17 @@ export class AnthropicProvider implements LlmProvider {
 				system: sysMsg?.content,
 				messages: chatMsgs.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
 			});
-			const rawText = response.content[0].type === "text" ? response.content[0].text : "{}";
+			const textBlock = response.content.find((block) => block.type === "text");
+			const rawText = textBlock ? (textBlock as { text?: string }).text ?? "{}" : "{}";
 
 			let parsed: T;
 			try {
-				parsed = JSON.parse(rawText) as T;
+				// Strip markdown code fences (```json ... ```) before parsing
+				const cleaned = rawText.replace(/```(?:json)?[\s\S]*?```/g, (match) => {
+					const inner = match.replace(/^```\w*\n?/, "").replace(/\n?```$/, "");
+					return inner.trim();
+				});
+				parsed = JSON.parse(cleaned) as T;
 			} catch {
 				const jsonMatch = rawText.match(/\{[\s\S]*\}/);
 				if (jsonMatch) {

@@ -18,10 +18,12 @@ const PROMPTS: Record<PromptId, PromptVersion> = {
 			"",
 			"RULES:",
 			"1. Never use general knowledge outside the context.",
-			"2. Always cite sources using [source:chunkId] format.",
+			"2. Always include inline citations in the answer text using [source:chunkId] format after each claim.",
 			"3. If context is insufficient, say so honestly.",
 			"",
 			'Respond with JSON: {"answer": string, "citations": [{"chunkId": string, "excerpt": string}], "confidence": "high"|"medium"|"low"}',
+			"",
+			"Example answer: \"Full-time employees get 20 vacation days per year [source:doc1-chunk-0]. Up to 5 unused days carry over [source:doc1-chunk-0].\"",
 		].join("\n"),
 	},
 	"answer.grounding": {
