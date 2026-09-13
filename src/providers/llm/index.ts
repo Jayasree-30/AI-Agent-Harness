@@ -1,5 +1,28 @@
 import { GoogleGenerativeAI, type GenerativeModel } from "@google/generative-ai";
 
+function isRetryableError(error: unknown): boolean {
+	if (error instanceof Error) {
+		const msg = error.message;
+		return msg.includes("429") || msg.includes("500") || msg.includes("503") || msg.includes("Too Many Requests");
+	}
+	return false;
+}
+
+async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
+	for (let i = 0; i < maxRetries; i++) {
+		try {
+			return await fn();
+		} catch (error) {
+			if (i < maxRetries - 1 && isRetryableError(error)) {
+				await new Promise((r) => setTimeout(r, Math.pow(2, i) * 1000));
+				continue;
+			}
+			throw error;
+		}
+	}
+	throw new Error("Max retries exceeded");
+}
+
 export interface LlmMessage {
 	role: "user" | "assistant" | "system";
 	content: string;
@@ -37,18 +60,21 @@ export class GeminiProvider implements LlmProvider {
 			});
 		}
 
-		const result = await this.model.generateContent({ contents });
-		const response = await result.response;
-		const text = response.text();
+		const result = await withRetry(async () => {
+			const r = await this.model.generateContent({ contents });
+			const response = await r.response;
+			const text = response.text();
+			return {
+				content: text,
+				stopReason: "end_turn",
+				usage: {
+					inputTokens: response.usageMetadata?.promptTokenCount ?? 0,
+					outputTokens: response.usageMetadata?.candidatesTokenCount ?? 0,
+				},
+			} as LlmResponse;
+		});
 
-		return {
-			content: text,
-			stopReason: "end_turn",
-			usage: {
-				inputTokens: response.usageMetadata?.promptTokenCount ?? 0,
-				outputTokens: response.usageMetadata?.candidatesTokenCount ?? 0,
-			},
-		};
+		return result;
 	}
 
 	async generateWithJson<T>(messages: LlmMessage[], _schemaDescription: string): Promise<{ data: T; raw: string }> {
@@ -75,24 +101,37 @@ export class GeminiProvider implements LlmProvider {
 			});
 		}
 
-		const result = await this.model.generateContent({
-			contents,
-			generationConfig: {
-				responseMimeType: "application/json",
-			},
+		const { raw, data } = await withRetry(async () => {
+			const result = await this.model.generateContent({
+				contents,
+				generationConfig: {
+					responseMimeType: "application/json",
+				},
+			});
+
+			const response = await result.response;
+			const rawText = response.text();
+
+			let parsed: T;
+			try {
+				parsed = JSON.parse(rawText) as T;
+			} catch {
+				const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+				if (jsonMatch) {
+					try {
+						parsed = JSON.parse(jsonMatch[0]) as T;
+					} catch {
+						parsed = { answer: rawText, citations: [], confidence: "low" } as T;
+					}
+				} else {
+					parsed = { answer: rawText, citations: [], confidence: "low" } as T;
+				}
+			}
+
+			return { raw: rawText, data: parsed };
 		});
 
-		const response = await result.response;
-		const raw = response.text();
-
-		let parsed: T;
-		try {
-			parsed = JSON.parse(raw) as T;
-		} catch {
-			parsed = { answer: raw, citations: [], confidence: "low" } as T;
-		}
-
-		return { data: parsed, raw };
+		return { raw, data };
 	}
 }
 
