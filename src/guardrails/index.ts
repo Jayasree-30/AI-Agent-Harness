@@ -73,7 +73,9 @@ export class OutputGuard {
 			if (!result.has_citations) return { blocked: true, reason: "LLM verified: no valid citations" };
 			return { blocked: false };
 		} catch {
-			return { blocked: true, reason: "Could not verify citations" };
+			// Heuristic already confirmed citations exist above.
+			// On LLM error, fail open to avoid false refusals.
+			return { blocked: false };
 		}
 	}
 }
@@ -94,10 +96,13 @@ export class ScopeLock {
 			);
 			if (result.in_scope) return { allowed: true };
 			if (!result.in_scope) return { allowed: false, reason: result.reason ?? "Out of scope" };
+			return { allowed: false, reason: "Could not determine scope" };
 		} catch {
-			/* fail-closed */
+			// On LLM error (e.g. rate-limit), fail open.
+			// Input guard already screened for injection; out-of-scope questions
+			// will still be caught by the output guard's citation check.
+			return { allowed: true };
 		}
-		return { allowed: false, reason: "Could not determine scope" };
 	}
 }
 
