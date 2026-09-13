@@ -44,7 +44,7 @@ export class GeminiProvider implements LlmProvider {
 
 	constructor(
 		private readonly genAI: GoogleGenerativeAI,
-		modelName: string = "gemini-2.5-pro"
+		modelName: string = "gemini-3.1-pro-preview"
 	) {
 		this.model = genAI.getGenerativeModel({ model: modelName });
 	}
