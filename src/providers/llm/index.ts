@@ -1,9 +1,11 @@
-import { GoogleGenerativeAI, type GenerativeModel } from "@google/generative-ai";
+import Anthropic from "@anthropic-ai/sdk";
 
 function isRetryableError(error: unknown): boolean {
+	if (error instanceof Anthropic.APIError) {
+		return error.status === 429 || error.status === 500 || error.status === 503;
+	}
 	if (error instanceof Error) {
-		const msg = error.message;
-		return msg.includes("429") || msg.includes("500") || msg.includes("503") || msg.includes("Too Many Requests");
+		return error.message.includes("429") || error.message.includes("500") || error.message.includes("503") || error.message.includes("rate_limit");
 	}
 	return false;
 }
@@ -39,37 +41,34 @@ export interface LlmProvider {
 	generateWithJson<T>(messages: LlmMessage[], schemaDescription: string): Promise<{ data: T; raw: string }>;
 }
 
-export class GeminiProvider implements LlmProvider {
-	private readonly model: GenerativeModel;
+export class AnthropicProvider implements LlmProvider {
+	private readonly client: Anthropic;
 
 	constructor(
-		private readonly genAI: GoogleGenerativeAI,
-		modelName: string = "gemini-3.1-pro-preview"
+		apiKey: string,
+		modelName: string = "claude-sonnet-4-5-20250929"
 	) {
-		this.model = genAI.getGenerativeModel({ model: modelName });
+		this.client = new Anthropic({ apiKey });
 	}
 
 	async generate(messages: LlmMessage[]): Promise<LlmResponse> {
+		const sysMsg = messages.find((m) => m.role === "system");
 		const chatMsgs = messages.filter((m) => m.role !== "system");
 
-		const contents: Array<{ role: "user" | "model"; parts: Array<{ text: string }> }> = [];
-		for (const m of chatMsgs) {
-			contents.push({
-				role: m.role === "assistant" ? "model" : "user",
-				parts: [{ text: m.content }],
-			});
-		}
-
 		const result = await withRetry(async () => {
-			const r = await this.model.generateContent({ contents });
-			const response = await r.response;
-			const text = response.text();
+			const response = await this.client.messages.create({
+				model: "claude-sonnet-4-5-20250929",
+				max_tokens: 1024,
+				system: sysMsg?.content,
+				messages: chatMsgs.map((m) => ({ role: m.role, content: m.content })),
+			});
+			const text = response.content[0].type === "text" ? response.content[0].text : "";
 			return {
 				content: text,
-				stopReason: "end_turn",
+				stopReason: response.stop_reason,
 				usage: {
-					inputTokens: response.usageMetadata?.promptTokenCount ?? 0,
-					outputTokens: response.usageMetadata?.candidatesTokenCount ?? 0,
+					inputTokens: response.usage.input_tokens,
+					outputTokens: response.usage.output_tokens,
 				},
 			} as LlmResponse;
 		});
@@ -81,36 +80,14 @@ export class GeminiProvider implements LlmProvider {
 		const sysMsg = messages.find((m) => m.role === "system");
 		const chatMsgs = messages.filter((m) => m.role !== "system");
 
-		const contents: Array<{ role: "user" | "model"; parts: Array<{ text: string }> }> = [];
-
-		if (sysMsg) {
-			contents.push({
-				role: "user",
-				parts: [{ text: `[]\n${sysMsg.content}` }],
+		const result = await withRetry(async () => {
+			const response = await this.client.messages.create({
+				model: "claude-sonnet-4-5-20250929",
+				max_tokens: 1024,
+				system: sysMsg?.content,
+				messages: chatMsgs.map((m) => ({ role: m.role, content: m.content })),
 			});
-			contents.push({
-				role: "model",
-				parts: [{ text: "Understood. I will follow these instructions." }],
-			});
-		}
-
-		for (const m of chatMsgs) {
-			contents.push({
-				role: m.role === "assistant" ? "model" : "user",
-				parts: [{ text: m.content }],
-			});
-		}
-
-		const { raw, data } = await withRetry(async () => {
-			const result = await this.model.generateContent({
-				contents,
-				generationConfig: {
-					responseMimeType: "application/json",
-				},
-			});
-
-			const response = await result.response;
-			const rawText = response.text();
+			const rawText = response.content[0].type === "text" ? response.content[0].text : "{}";
 
 			let parsed: T;
 			try {
@@ -131,7 +108,7 @@ export class GeminiProvider implements LlmProvider {
 			return { raw: rawText, data: parsed };
 		});
 
-		return { raw, data };
+		return result;
 	}
 }
 
