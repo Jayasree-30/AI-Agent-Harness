@@ -3,13 +3,9 @@
 // orchestrator and reports a pass rate. Exit code 1 below threshold (80%).
 
 import "dotenv/config";
-import {
-	AnthropicProvider,
-	InMemoryRetrieval,
-	seedKnowledgeBase,
-} from "../../src/index.js";
+import { AnthropicProvider, InMemoryRetrieval, seedKnowledgeBase } from "../../src/index.js";
 import { FIXTURE_DOCUMENTS, DOMAIN_DESCRIPTION as DOMAIN } from "../../fixtures/index.js";
-import { LLM_API_KEY_ENV } from "../../src/config/index.js";
+import { LLM_API_KEY_ENV, LLM_BASE_URL_ENV } from "../../src/config/index.js";
 import { GOLDEN_CASES, INJECTION_CASES, SCOPE_CASES, ALL_CASES, runEval, printReport } from "./corpus";
 
 const TEST_DOCUMENTS = FIXTURE_DOCUMENTS;
@@ -22,13 +18,14 @@ async function main() {
 	else if (filter === "scope") cases = SCOPE_CASES;
 
 	const apiKey = process.env[LLM_API_KEY_ENV];
+	const baseURL = process.env[LLM_BASE_URL_ENV];
 	if (!apiKey) {
 		console.error("ERROR: " + LLM_API_KEY_ENV + " is not set");
 		console.error("Set " + LLM_API_KEY_ENV + "=sk-ant-... before running npm run eval");
 		process.exit(2);
 	}
 
-	const llm = new AnthropicProvider(apiKey);
+	const llm = new AnthropicProvider(apiKey, "claude-sonnet-4-5-20250929", baseURL);
 	const retrieval = new InMemoryRetrieval();
 	await seedKnowledgeBase(retrieval, TEST_DOCUMENTS);
 

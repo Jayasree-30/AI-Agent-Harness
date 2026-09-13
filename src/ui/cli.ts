@@ -7,7 +7,7 @@ import "dotenv/config";
 import * as readline from "readline";
 import { AnthropicProvider, InMemoryRetrieval, createOrchestrator, seedKnowledgeBase } from "../index.js";
 import { FIXTURE_DOCUMENTS, DOMAIN_DESCRIPTION as DOMAIN } from "../../fixtures/index.js";
-import { LLM_API_KEY_ENV } from "../config/index.js";
+import { LLM_API_KEY_ENV, LLM_BASE_URL_ENV } from "../config/index.js";
 
 const DOCUMENTS = FIXTURE_DOCUMENTS;
 
@@ -17,6 +17,10 @@ function printUsage() {
 	console.error("Set it before running:");
 	console.error(" Windows: set " + LLM_API_KEY_ENV + "=sk-ant-...");
 	console.error(" Unix: " + LLM_API_KEY_ENV + "=sk-ant-... npm run dev");
+	console.error("");
+	console.error("Optional — custom API endpoint:");
+	console.error(" Windows: set " + LLM_BASE_URL_ENV + "=https://your-proxy.example.com");
+	console.error(" Unix: " + LLM_BASE_URL_ENV + "=https://your-proxy.example.com npm run dev");
 }
 
 async function main() {
@@ -24,12 +28,13 @@ async function main() {
 	console.log(" Type 'quit' or Ctrl+C to exit\n");
 
 	const apiKey = process.env[LLM_API_KEY_ENV];
+	const baseURL = process.env[LLM_BASE_URL_ENV];
 	if (!apiKey) {
 		printUsage();
 		process.exit(1);
 	}
 
-	const llm = new AnthropicProvider(apiKey);
+	const llm = new AnthropicProvider(apiKey, "claude-sonnet-4-5-20250929", baseURL);
 	const retrieval = new InMemoryRetrieval();
 
 	await seedKnowledgeBase(retrieval, DOCUMENTS);

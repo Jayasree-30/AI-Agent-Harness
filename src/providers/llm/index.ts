@@ -43,12 +43,17 @@ export interface LlmProvider {
 
 export class AnthropicProvider implements LlmProvider {
 	private readonly client: Anthropic;
+	private readonly model: string;
 
 	constructor(
 		apiKey: string,
-		modelName: string = "claude-sonnet-4-5-20250929"
+		modelName: string = "claude-sonnet-4-5-20250929",
+		baseURL?: string
 	) {
-		this.client = new Anthropic({ apiKey });
+		this.model = modelName;
+		const clientConfig: { apiKey: string; dangerouslyAllowBrowser?: boolean } & Record<string, unknown> = { apiKey, dangerouslyAllowBrowser: true };
+		if (baseURL) clientConfig.baseURL = baseURL;
+		this.client = new Anthropic(clientConfig);
 	}
 
 	async generate(messages: LlmMessage[]): Promise<LlmResponse> {
@@ -57,10 +62,10 @@ export class AnthropicProvider implements LlmProvider {
 
 		const result = await withRetry(async () => {
 			const response = await this.client.messages.create({
-				model: "claude-sonnet-4-5-20250929",
+				model: this.model,
 				max_tokens: 1024,
 				system: sysMsg?.content,
-				messages: chatMsgs.map((m) => ({ role: m.role, content: m.content })),
+				messages: chatMsgs.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
 			});
 			const text = response.content[0].type === "text" ? response.content[0].text : "";
 			return {
@@ -82,10 +87,10 @@ export class AnthropicProvider implements LlmProvider {
 
 		const result = await withRetry(async () => {
 			const response = await this.client.messages.create({
-				model: "claude-sonnet-4-5-20250929",
+				model: this.model,
 				max_tokens: 1024,
 				system: sysMsg?.content,
-				messages: chatMsgs.map((m) => ({ role: m.role, content: m.content })),
+				messages: chatMsgs.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
 			});
 			const rawText = response.content[0].type === "text" ? response.content[0].text : "{}";
 
