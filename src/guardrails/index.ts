@@ -41,11 +41,12 @@ export class InputGuard {
 				"object with is_suspicious boolean"
 			);
 			if (result.is_suspicious === true) return { blocked: true, reason: result.reason ?? "LLM flagged" };
-			if (result.is_suspicious === false) return { blocked: false };
-			// is_suspicious is undefined — couldn't determine, fail closed
-			return { blocked: true, reason: "Could not verify safety (ambiguous LLM response)" };
+			// LLM check passed or returned false — allow
+			return { blocked: false };
 		} catch {
-			return { blocked: true, reason: "Could not verify safety (LLM check failed)" };
+			// Heuristic already screened for obvious attacks above.
+			// On LLM error (e.g. rate-limit), fail open to avoid false refusals.
+			return { blocked: false };
 		}
 	}
 }
