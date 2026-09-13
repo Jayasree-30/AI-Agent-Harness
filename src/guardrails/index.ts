@@ -12,6 +12,7 @@ export class InputGuard {
 		const patterns = [
 			/ignore\s+(all\s+)?(previous|above|earlier|your)\s+(instructions|prompts|rules|guidelines)/i,
 			/disregard\s+(all\s+)?(previous|above|earlier|your)\s+(instructions|prompts|rules|guidelines)/i,
+			/ignore\s+all\s+instructions/i,
 			/you\s+are\s+(now|a)\s+/i,
 			/override\s+(your|the)\s+(instructions|rules|guidelines|constraints)/i,
 			/reveal\s+(your|the)\s+(system|prompt|instructions|rules|configuration)/i,
@@ -32,14 +33,17 @@ export class InputGuard {
 		try {
 			const prompt = getPrompt("guard.input");
 			const rendered = renderPrompt(prompt.template, { message });
-			const response = await this.llm.generate([
-				{ role: "system", content: "You are a safety classifier. Always respond with valid JSON only." },
-				{ role: "user", content: rendered },
-			]);
-			const cleaned = response.content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-			const result = JSON.parse(cleaned);
-			if (result.is_suspicious) return { blocked: true, reason: result.reason ?? "LLM flagged" };
-			return { blocked: false };
+			const { data: result } = await this.llm.generateWithJson<{ is_suspicious?: boolean; reason?: string }>(
+				[
+					{ role: "system", content: "You are a safety classifier. Always respond with valid JSON only." },
+					{ role: "user", content: rendered },
+				],
+				"object with is_suspicious boolean"
+			);
+			if (result.is_suspicious === true) return { blocked: true, reason: result.reason ?? "LLM flagged" };
+			if (result.is_suspicious === false) return { blocked: false };
+			// is_suspicious is undefined — couldn't determine, fail closed
+			return { blocked: true, reason: "Could not verify safety (ambiguous LLM response)" };
 		} catch {
 			return { blocked: true, reason: "Could not verify safety (LLM check failed)" };
 		}
@@ -61,9 +65,10 @@ export class OutputGuard {
 		try {
 			const prompt = getPrompt("answer.output_guard");
 			const rendered = renderPrompt(prompt.template, { answer });
-			const response = await this.llm.generate([{ role: "user", content: rendered }]);
-			const cleaned = response.content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-			const result = JSON.parse(cleaned);
+			const { data: result } = await this.llm.generateWithJson<{ has_citations?: boolean }>(
+				[{ role: "user", content: rendered }],
+				"object with has_citations boolean"
+			);
 			if (!result.has_citations) return { blocked: true, reason: "LLM verified: no valid citations" };
 			return { blocked: false };
 		} catch {
@@ -82,9 +87,10 @@ export class ScopeLock {
 			question,
 		});
 		try {
-			const response = await this.llm.generate([{ role: "user", content: rendered }]);
-			const cleaned = response.content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-			const result = JSON.parse(cleaned);
+			const { data: result } = await this.llm.generateWithJson<{ in_scope?: boolean; reason?: string }>(
+				[{ role: "user", content: rendered }],
+				"object with in_scope boolean"
+			);
 			if (result.in_scope) return { allowed: true };
 			if (!result.in_scope) return { allowed: false, reason: result.reason ?? "Out of scope" };
 		} catch {
