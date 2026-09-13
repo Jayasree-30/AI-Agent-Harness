@@ -5,6 +5,8 @@
 
 import * as readline from "readline";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { config } from "dotenv";
+config();
 import {
 	GeminiProvider,
 	InMemoryRetrieval,

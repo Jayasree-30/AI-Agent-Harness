@@ -2,6 +2,7 @@
 // Eval runner: drives the golden + injection + scope corpus through the
 // orchestrator and reports a pass rate. Exit code 1 below threshold (80%).
 
+import "dotenv/config";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import {
 	GeminiProvider,
